@@ -16,7 +16,7 @@ const tasks = [
     },
 ];
 
-const elementFactory = (element, parameters) => {
+const elementFactory = (element, parameters, parent) => {
     const el = document.createElement(element);
     if (parameters.className)
         Array.isArray(parameters.className)
@@ -32,54 +32,49 @@ const elementFactory = (element, parameters) => {
         el.htmlFor = parameters.htmlFor;
     if (parameters.text)
         el.textContent = parameters.text;
-    return el;
+    if (!parent)
+        return el
+    else
+        Array.from(document.querySelectorAll(parent)).at(-1).append(el);
 }
 
 const createItems = (id, text) => {
-    const taskItem = elementFactory("div", {
+    elementFactory("div", {
         className: "task-item",
         dataset: {
             name: "taskId",
             value: id
         }
-    });
-    const mainContainer = elementFactory("div", {
+    }, ".tasks-list");
+    elementFactory("div", {
         className: "task-item__main-container"
-    });
-    taskItem.append(mainContainer);
-    const mainContent = elementFactory("div", {
+    }, ".task-item");
+    elementFactory("div", {
         className: "task-item__main-content"
-    });
-    mainContainer.append(mainContent);
-    const form = elementFactory("form", {
+    }, ".task-item__main-container");
+    elementFactory("form", {
         className: "task-item__form"
-    });
-    mainContent.append(form);
-    const input = elementFactory("input", {
+    }, ".task-item__main-content");
+    elementFactory("input", {
         className: "checkbox-form__checkbox",
         type: "checkbox",
         id: `task-${id}`
-    });
-    form.append(input);
-    const label = elementFactory("label", {
+    }, ".task-item__form");
+    elementFactory("label", {
         htmlFor: `task-${id}`
-    });
-    form.append(label);
-    const span = elementFactory("span", {
+    }, ".task-item__form");
+    elementFactory("span", {
         className: "task-item__text",
         text
-    });
-    mainContent.append(span);
-    const button = elementFactory("button", {
+    }, ".task-item__main-content");
+    elementFactory("button", {
         className: ["task-item__delete-button", "default-button", "delete-button"],
         dataset: {
             name: "deleteTaskId",
             value: id
         },
         text: "Удалить"
-    });
-    mainContainer.append(button);
-    return taskItem;
+    }, ".task-item__main-container");
 }
 
 let flagLightOrDark = false;
@@ -105,7 +100,7 @@ document.addEventListener("keydown", event => {
 
 const tasksList = document.querySelector(".tasks-list");
 const addItems = () => {
-    tasks.forEach(task => tasksList.append(createItems(task.id, task.text)));
+    tasks.forEach(task => createItems(task.id, task.text));
     lightOrDarkTheme(flagLightOrDark);
 }
 addItems();
@@ -136,7 +131,8 @@ createTaskBlock.addEventListener("submit", event => {
     const textToAdd = event.target.taskName.value
     if (validations(textToAdd)) {
         tasks.unshift({id: `${Date.now()}`, completed: false, text: textToAdd});
-        tasksList.prepend(createItems(tasks[0].id, textToAdd));
+        tasksList.replaceChildren();
+        addItems();
         lightOrDarkTheme(flagLightOrDark);
     }
 })
@@ -195,7 +191,8 @@ deleteModalButtons.addEventListener("click", event => {
             }
         modalWindow.classList.toggle("modal-overlay_hidden");
         tasksList.replaceChildren();
-        tasks.forEach(i => tasksList.append(createItems(i.id, i.text)));
+        tasks.forEach(i => createItems(i.id, i.text));
         lightOrDarkTheme(flagLightOrDark);
     }
 })
+
